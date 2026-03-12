@@ -1,6 +1,6 @@
 import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { createCanvas } from "canvas";
+import sharp from "sharp";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -10,40 +10,37 @@ export default async function handler(req, res) {
   try {
     const { elements, appState } = req.body;
     const bgColor = appState?.viewBackgroundColor || "#ffffff";
-
     const width = 1200;
     const height = 800;
-    const canvas = createCanvas(width, height);
-    const ctx = canvas.getContext("2d");
 
-    // Background
-    ctx.fillStyle = bgColor;
-    ctx.fillRect(0, 0, width, height);
-
-    // Draw elements
+    // Build SVG from elements
+    let svgElements = "";
     for (const el of elements || []) {
-      ctx.strokeStyle = el.strokeColor || "#000000";
-      ctx.fillStyle = el.backgroundColor || "transparent";
-      ctx.lineWidth = el.strokeWidth || 1;
+      const stroke = el.strokeColor || "#000000";
+      const fill = el.backgroundColor === "transparent" ? "none" : (el.backgroundColor || "none");
+      const sw = el.strokeWidth || 1;
 
       if (el.type === "rectangle") {
-        ctx.beginPath();
-        ctx.rect(el.x, el.y, el.width, el.height);
-        ctx.fill();
-        ctx.stroke();
+        svgElements += `<rect x="${el.x}" y="${el.y}" width="${el.width}" height="${el.height}" stroke="${stroke}" fill="${fill}" stroke-width="${sw}"/>`;
       } else if (el.type === "ellipse") {
-        ctx.beginPath();
-        ctx.ellipse(el.x + el.width/2, el.y + el.height/2, el.width/2, el.height/2, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
+        svgElements += `<ellipse cx="${el.x + el.width/2}" cy="${el.y + el.height/2}" rx="${el.width/2}" ry="${el.height/2}" stroke="${stroke}" fill="${fill}" stroke-width="${sw}"/>`;
       } else if (el.type === "text") {
-        ctx.fillStyle = el.strokeColor || "#000000";
-        ctx.font = `${el.fontSize || 16}px sans-serif`;
-        ctx.fillText(el.text || "", el.x, el.y);
+        svgElements += `<text x="${el.x}" y="${el.y}" fill="${stroke}" font-size="${el.fontSize || 16}" font-family="sans-serif">${el.text || ""}</text>`;
+      } else if (el.type === "line" || el.type === "arrow") {
+        const points = el.points || [];
+        if (points.length >= 2) {
+          const d = points.map((p, i) => `${i === 0 ? "M" : "L"} ${el.x + p[0]} ${el.y + p[1]}`).join(" ");
+          svgElements += `<path d="${d}" stroke="${stroke}" fill="none" stroke-width="${sw}"/>`;
+        }
       }
     }
 
-    const buffer = canvas.toBuffer("image/png");
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
+      <rect width="${width}" height="${height}" fill="${bgColor}"/>
+      ${svgElements}
+    </svg>`;
+
+    const buffer = await sharp(Buffer.from(svg)).png().toBuffer();
 
     const s3 = new S3Client({
       region: "auto",
