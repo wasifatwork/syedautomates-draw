@@ -7,6 +7,11 @@
     "packages/*",
     "examples/*"
   ],
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.540.0",
+    "@aws-sdk/s3-request-presigner": "^3.540.0",
+    "canvas": "^2.11.2"
+  },
   "devDependencies": {
     "@babel/preset-env": "7.26.9",
     "@excalidraw/eslint-config": "1.0.3",
@@ -56,6 +61,7 @@
     "build:element": "yarn --cwd ./packages/element build:esm",
     "build:excalidraw": "yarn --cwd ./packages/excalidraw build:esm",
     "build:math": "yarn --cwd ./packages/math build:esm",
+    "build:element": "yarn --cwd ./packages/element build:esm",
     "build:packages": "yarn build:common && yarn build:math && yarn build:element && yarn build:excalidraw",
     "build:version": "yarn --cwd ./excalidraw-app build:version",
     "build": "yarn --cwd ./excalidraw-app build",
