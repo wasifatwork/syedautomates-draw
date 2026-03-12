@@ -1,6 +1,6 @@
 import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { exportToCanvas } from "@excalidraw/excalidraw";
+import { createCanvas } from "canvas";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -9,19 +9,41 @@ export default async function handler(req, res) {
 
   try {
     const { elements, appState } = req.body;
+    const bgColor = appState?.viewBackgroundColor || "#ffffff";
 
-    const canvas = await exportToCanvas({
-      elements,
-      appState,
-      files: null,
-    });
+    const width = 1200;
+    const height = 800;
+    const canvas = createCanvas(width, height);
+    const ctx = canvas.getContext("2d");
 
-    const buffer = await new Promise((resolve, reject) => {
-      canvas.toBuffer((err, buf) => {
-        if (err) reject(err);
-        else resolve(buf);
-      }, "image/png");
-    });
+    // Background
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, width, height);
+
+    // Draw elements
+    for (const el of elements || []) {
+      ctx.strokeStyle = el.strokeColor || "#000000";
+      ctx.fillStyle = el.backgroundColor || "transparent";
+      ctx.lineWidth = el.strokeWidth || 1;
+
+      if (el.type === "rectangle") {
+        ctx.beginPath();
+        ctx.rect(el.x, el.y, el.width, el.height);
+        ctx.fill();
+        ctx.stroke();
+      } else if (el.type === "ellipse") {
+        ctx.beginPath();
+        ctx.ellipse(el.x + el.width/2, el.y + el.height/2, el.width/2, el.height/2, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      } else if (el.type === "text") {
+        ctx.fillStyle = el.strokeColor || "#000000";
+        ctx.font = `${el.fontSize || 16}px sans-serif`;
+        ctx.fillText(el.text || "", el.x, el.y);
+      }
+    }
+
+    const buffer = canvas.toBuffer("image/png");
 
     const s3 = new S3Client({
       region: "auto",
