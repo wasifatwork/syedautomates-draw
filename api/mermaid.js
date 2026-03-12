@@ -14,8 +14,15 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "mermaid field is required" });
     }
 
-    // Use mermaid.ink API to render mermaid to PNG directly
-    const encoded = Buffer.from(mermaid).toString("base64");
+    const encoded = Buffer.from(JSON.stringify({
+      code: mermaid,
+      mermaid: {
+        theme: "default"
+      },
+      updateEditor: false,
+      rough: true
+    })).toString("base64url");
+
     const mermaidUrl = `https://mermaid.ink/img/${encoded}`;
 
     const imgResponse = await fetch(mermaidUrl);
