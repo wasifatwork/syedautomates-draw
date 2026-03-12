@@ -8,10 +8,12 @@
     "examples/*"
   ],
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.540.0",
-    "@aws-sdk/s3-request-presigner": "^3.540.0",
-    "sharp": "^0.33.3"
-  },
+  "@aws-sdk/client-s3": "^3.540.0",
+  "@aws-sdk/s3-request-presigner": "^3.540.0",
+  "@excalidraw/mermaid-to-excalidraw": "^0.3.0",
+  "sharp": "^0.33.3",
+  "jsdom": "^22.1.0"
+},
   "devDependencies": {
     "@babel/preset-env": "7.26.9",
     "@excalidraw/eslint-config": "1.0.3",
